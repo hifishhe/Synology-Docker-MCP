@@ -30,41 +30,50 @@
 | `tail` 参数注入 | 强制正整数，上限 10000，默认 100 |
 | SSH 连接无超时 | 添加 `readyTimeout: 30000` |
 
-### 🚀 快速上手配置
+### 🚀 快速上手 (面向终端用户)
 
 1. **开启群晖 SSH 服务**: 
    前往 **控制面板 -> 终端机和 SNMP** 并勾选 **启动 SSH 功能**。
    
-2. **配置环境变量凭证**:
-   复制项目中的 `.env.example` 并重命名为 `.env`，填入您的 NAS 连接信息：
-   ```env
-   NAS_HOST=192.168.1.xxx
-   NAS_PORT=22
-   NAS_USER=your_admin_account
-   NAS_PASSWORD=your_admin_password
-   NAS_DOCKER_DIR=/volume1/docker
+2. **接入 MCP 客户端 (例如 Claude Desktop 或 Cursor)**:
+   您**不需要**克隆代码或安装任何东西。只需将以下内容添加到客户端的 MCP 配置文件 JSON 中，客户端会自动通过 `npx` 帮您拉取并运行最新版代码：
+   ```json
+   {
+     "mcpServers": {
+       "synology-docker": {
+         "command": "npx",
+         "args": [
+           "-y",
+           "synology-docker-mcp"
+         ],
+         "env": {
+           "NAS_HOST": "192.168.1.xxx",
+           "NAS_PORT": "22",
+           "NAS_USER": "your_admin_account",
+           "NAS_PASSWORD": "your_admin_password",
+           "NAS_DOCKER_DIR": "/volume1/docker"
+         }
+       }
+     }
+   }
    ```
 
-3. **安装依赖并构建**:
+### 🛠️ 本地开发 (面向开发者)
+
+如果您希望修改此项目的源代码：
+
+1. **克隆并配置**:
+   复制项目中的 `.env.example` 并重命名为 `.env`，填入您的 NAS 连接信息。
+
+2. **安装依赖并构建**:
    ```bash
    npm install
    npm run build
    ```
 
-4. **接入 MCP 客户端 (例如 Claude Desktop 或 Cursor)**:
-   将以下内容添加到客户端的 MCP 配置文件 JSON 中：
-   ```json
-   {
-     "mcpServers": {
-       "synology-docker": {
-         "command": "node",
-         "args": [
-           "--env-file=e:\\Dev\\Synology Docker MCP\\.env",
-           "e:\\Dev\\Synology Docker MCP\\build\\index.js"
-         ]
-       }
-     }
-   }
+3. **测试运行**:
+   ```bash
+   npm start
    ```
 
 ---
@@ -119,16 +128,23 @@ This is a Model Context Protocol (MCP) server specifically designed to manage, c
    ```
 
 4. **Connect to MCP Client (e.g. Claude Desktop / Cursor)**:
-   Add the following to your MCP configuration JSON:
+   While you can use a local `node` path if built locally, the **highly recommended** method is to use `npx` (which pulls directly from npm, requiring no local cloning). Add the following to your MCP configuration JSON:
    ```json
    {
      "mcpServers": {
        "synology-docker": {
-         "command": "node",
+         "command": "npx",
          "args": [
-           "--env-file=e:\\Dev\\Synology Docker MCP\\.env",
-           "e:\\Dev\\Synology Docker MCP\\build\\index.js"
-         ]
+           "-y",
+           "synology-docker-mcp"
+         ],
+         "env": {
+           "NAS_HOST": "192.168.1.xxx",
+           "NAS_PORT": "22",
+           "NAS_USER": "your_admin_account",
+           "NAS_PASSWORD": "your_admin_password",
+           "NAS_DOCKER_DIR": "/volume1/docker"
+         }
        }
      }
    }

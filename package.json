@@ -1,6 +1,6 @@
 {
   "name": "synology-docker-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP Server for managing Synology NAS Docker Containers and Projects via SSH",
   "author": "hifish",
   "license": "MIT",
@@ -13,6 +13,9 @@
     "ai"
   ],
   "main": "build/index.js",
+  "bin": {
+    "synology-docker-mcp": "build/index.js"
+  },
   "type": "module",
   "scripts": {
     "build": "tsc",
