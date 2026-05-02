@@ -1,0 +1,22 @@
+{
+  "name": "synology-docker-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server for managing Synology NAS Docker Containers and Projects via SSH",
+  "main": "build/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.1",
+    "dotenv": "^16.4.5",
+    "ssh2": "^1.15.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@types/ssh2": "^1.15.0",
+    "typescript": "^5.3.3"
+  }
+}
