@@ -23,6 +23,8 @@ if (!NAS_HOST || !NAS_USER || !NAS_PASSWORD) {
 
 const VALID_DOCKER_ACTIONS = new Set(["start", "stop", "restart", "rm"]);
 const VALID_COMPOSE_ACTIONS = new Set(["up -d", "down", "restart", "pull"]);
+// DSM Container Manager's native Project WebAPI. Deliberately excludes clean/delete.
+const VALID_DSM_PROJECT_ACTIONS = new Set(["build_stream", "start_stream", "stop_stream", "restart_stream"]);
 
 /** Wrap s in single quotes, escaping any internal single quotes. */
 function shQuote(s: string): string {
@@ -43,6 +45,13 @@ function validateProjectName(name: string): void {
   }
 }
 
+/** DSM Container Manager Project IDs are UUIDs. */
+function validateDsmProjectId(id: string): void {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    throw new Error(`Invalid DSM project ID: ${id}`);
+  }
+}
+
 /** Filepath must be absolute, contain no .. segments, and be under NAS_DOCKER_DIR. */
 function validateRestrictedPath(filepath: string): void {
   if (!filepath.startsWith("/")) {
@@ -60,7 +69,7 @@ function validateRestrictedPath(filepath: string): void {
 const server = new Server(
   {
     name: "synology-docker-mcp",
-    version: "1.0.0",
+    version: "1.0.2",
   },
   {
     capabilities: {
@@ -153,7 +162,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "synology_project_manage",
-        description: "Manage a docker-compose project (up, down, restart)",
+        description: "Legacy docker-compose wrapper for non-DSM-managed projects only. Do not use it for Synology Container Manager Projects; use synology_dsm_project_manage instead.",
         inputSchema: {
           type: "object",
           properties: {
@@ -161,6 +170,45 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             action: { type: "string", enum: ["up -d", "down", "restart", "pull"], description: "Docker compose action" },
           },
           required: ["project_name", "action"],
+        },
+      },
+      {
+        name: "synology_dsm_project_list",
+        description: "List Synology Container Manager Projects through DSM's native SYNO.Docker.Project API, including the container IDs DSM currently owns",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
+      {
+        name: "synology_dsm_container_list",
+        description: "List containers through DSM Container Manager's native SYNO.Docker.Container API, including DSM's displayed name-to-live-ID mapping",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
+      {
+        name: "synology_dsm_project_log",
+        description: "Read the latest native DSM Container Manager Project action log",
+        inputSchema: {
+          type: "object",
+          properties: {
+            project_id: { type: "string", description: "DSM Container Manager Project UUID from synology_dsm_project_list" },
+          },
+          required: ["project_id"],
+        },
+      },
+      {
+        name: "synology_dsm_project_manage",
+        description: "Run a non-destructive DSM Container Manager Project lifecycle action through SYNO.Docker.Project; use only after explicit approval",
+        inputSchema: {
+          type: "object",
+          properties: {
+            project_id: { type: "string", description: "DSM Container Manager Project UUID from synology_dsm_project_list" },
+            action: { type: "string", enum: ["build_stream", "start_stream", "stop_stream", "restart_stream"], description: "Native DSM Project action; Clean and Delete are intentionally not exposed" },
+          },
+          required: ["project_id", "action"],
         },
       },
       {
@@ -242,6 +290,39 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const cmd = `cd ${shQuote(projectPath)} && docker-compose -p ${shQuote(project_name)} ${action}`;
       const res = await execSshCommand(cmd);
       return { content: [{ type: "text", text: `Command executed in ${projectPath}.\nExit Code: ${res.code}\nOutput:\n${res.stdout}\n${res.stderr}` }] };
+    }
+
+    else if (name === "synology_dsm_project_list") {
+      const res = await execSshCommand("/usr/syno/bin/synowebapi --exec api=SYNO.Docker.Project method=list version=1");
+      return { content: [{ type: "text", text: res.stdout || res.stderr }] };
+    }
+
+    else if (name === "synology_dsm_container_list") {
+      const res = await execSshCommand(
+        "/usr/syno/bin/synowebapi --exec api=SYNO.Docker.Container method=list version=1 limit=-1 offset=0 type='\"all\"'"
+      );
+      return { content: [{ type: "text", text: res.stdout || res.stderr }] };
+    }
+
+    else if (name === "synology_dsm_project_log") {
+      const { project_id } = args as { project_id: string };
+      validateDsmProjectId(project_id);
+      const res = await execSshCommand(
+        `/usr/syno/bin/synowebapi --exec api=SYNO.Docker.Project method=log version=1 id=${shQuote(JSON.stringify(project_id))}`
+      );
+      return { content: [{ type: "text", text: res.stdout || res.stderr }] };
+    }
+
+    else if (name === "synology_dsm_project_manage") {
+      const { project_id, action } = args as { project_id: string; action: string };
+      validateDsmProjectId(project_id);
+      if (!VALID_DSM_PROJECT_ACTIONS.has(action)) {
+        throw new Error(`Invalid DSM project action: ${action}`);
+      }
+      const res = await execSshCommand(
+        `/usr/syno/bin/synowebapi --exec api=SYNO.Docker.Project method=${action} version=1 id=${shQuote(JSON.stringify(project_id))}`
+      );
+      return { content: [{ type: "text", text: `DSM Project action '${action}' executed.\nExit Code: ${res.code}\nOutput:\n${res.stdout || res.stderr}` }] };
     }
 
     else if (name === "synology_read_file") {

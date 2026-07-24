@@ -21,6 +21,7 @@ dist/
 # System files
 .DS_Store
 Thumbs.db
+@eaDir/
 
 # Logs
 npm-debug.log*

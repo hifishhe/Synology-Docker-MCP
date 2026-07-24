@@ -10,13 +10,16 @@
 
 - **基于 SSH 的安全管理**: 直接通过 SSH 与您的群晖 NAS 进行通信，安全执行原生命令，彻底免除对外暴露 Docker TCP 接口的风险。
 - **自动提权系统 (Auto-Privilege Escalation)**: 自动注入凭证静默执行 `sudo`，完美解决群晖管理员账号在执行 docker 时常见的 `Permission Denied` 权限壁垒。
-- **群晖 Container Manager 完美兼容**: 原生支持并强制使用 `docker-compose -p` 标签，确保通过此 MCP 服务器启动或更新的项目能够与群晖自带网页端的项目界面完美同步（维持绿点健康状态）。
+- **DSM Container Manager 原生 Project 控制面**: 对 DSM 创建/管理的 Project，通过 `SYNO.Docker.Project` 调用原生 Project API；不再将普通 `docker-compose` wrapper 视为 DSM Project 控制面。
 - **全方位工具集**:
   - `synology_docker_ps`: 查看所有运行中的容器。
   - `synology_docker_logs`: 获取并追踪容器日志。
   - `synology_docker_manage`: 控制容器的启动、停止、重启或移除。
-  - `synology_project_list`: 自动搜索并发现 `/volume1/docker/` 目录下的所有项目。
-  - `synology_project_manage`: 原生执行项目的 Pull、Up、Down 或 Restart 指令。
+  - `synology_project_list`: 自动搜索并发现 `/volume1/docker/` 目录下的 Compose 项目。
+  - `synology_project_manage`: **仅限非 DSM 管理项目**的 legacy `docker-compose` wrapper；不得用于 Container Manager Project。
+  - `synology_dsm_project_list` / `synology_dsm_project_log`: 读取 DSM 原生 Project registry 和操作日志。
+  - `synology_dsm_container_list`: 读取 DSM Container Manager 的容器名称/ID 映射。
+  - `synology_dsm_project_manage`: 对 DSM Project 执行 `build_stream`、`start_stream`、`stop_stream` 或 `restart_stream`；刻意不暴露 `clean` / `delete`。
   - `synology_read_file` / `synology_write_file`: 远程读取或修改 `.env` 与 `docker-compose.yml` 配置文件。
 
 ### 🔒 安全加固记录 (v1.1.0)
@@ -86,13 +89,16 @@ This is a Model Context Protocol (MCP) server specifically designed to manage, c
 
 - **SSH-Based Management**: Communicates with your Synology NAS directly via SSH, ensuring secure execution of native commands without needing to expose the Docker TCP socket.
 - **Auto-Privilege Escalation**: Automatically injects credentials to run `sudo` silently, bypassing the `Permission Denied` issues commonly faced by Synology administrator accounts.
-- **Synology Container Manager Compatibility**: Native support for `docker-compose -p`, ensuring that projects started or updated via this MCP server perfectly align with the Synology Container Manager GUI (maintaining the green status indicator).
+- **DSM Container Manager Native Project Control Plane**: DSM-created or DSM-managed Projects are operated through the native `SYNO.Docker.Project` API. A plain `docker-compose` wrapper is not treated as DSM Project control.
 - **Comprehensive Toolset**:
   - `synology_docker_ps`: View all running containers.
   - `synology_docker_logs`: Stream container logs.
   - `synology_docker_manage`: Start, stop, restart, or remove containers.
-  - `synology_project_list`: Discover projects mapped in `/volume1/docker/`.
-  - `synology_project_manage`: Pull, up, down, or restart Docker Compose projects natively.
+  - `synology_project_list`: Discover Compose projects under `/volume1/docker/`.
+  - `synology_project_manage`: Legacy `docker-compose` wrapper for **non-DSM-managed projects only**; never use it for a Container Manager Project.
+  - `synology_dsm_project_list` / `synology_dsm_project_log`: Read the native DSM Project registry and action log.
+  - `synology_dsm_container_list`: Read DSM Container Manager's displayed container name-to-ID mapping.
+  - `synology_dsm_project_manage`: Run `build_stream`, `start_stream`, `stop_stream`, or `restart_stream` for a DSM Project; `clean` and `delete` are intentionally unavailable.
   - `synology_read_file` / `synology_write_file`: Edit `.env` and `docker-compose.yml` configurations remotely.
 
 ### 🔒 Security Hardening (v1.1.0)
