@@ -79,6 +79,17 @@
    npm start
    ```
 
+### 📦 npm 发布（维护者）
+
+项目通过 GitHub Actions 的 npm Trusted Publishing 发布，不保存长期 npm token。首次发布前，在 npm 包设置中添加 trusted publisher：
+
+```text
+Repository: hifishhe/Synology-Docker-MCP
+Workflow filename: publish-npm.yml
+```
+
+之后在 GitHub **Actions → Publish npm package → Run workflow** 中输入要发布的 tag（例如 `v1.0.2`）。以后推送新的 `v*` tag 会自动触发发布。
+
 ---
 
 ## 🇬🇧 English Version
@@ -155,3 +166,14 @@ This is a Model Context Protocol (MCP) server specifically designed to manage, c
      }
    }
    ```
+
+### 📦 npm Publishing (Maintainers)
+
+This project uses GitHub Actions npm Trusted Publishing and stores no long-lived npm token. Before the first publication, add a trusted publisher in the npm package settings:
+
+```text
+Repository: hifishhe/Synology-Docker-MCP
+Workflow filename: publish-npm.yml
+```
+
+Then run **Actions → Publish npm package → Run workflow** and enter the tag to publish (for example `v1.0.2`). Future `v*` tags trigger publishing automatically.
